@@ -16,7 +16,7 @@ import (
 func ResponsesToAnthropicRequest(req *ResponsesRequest) (*AnthropicRequest, error) {
 	isOpus55 := claude.IsOpus55(req.Model)
 	isSonnet55 := claude.IsSonnet55(req.Model)
-	system, messages, err := convertResponsesInputToAnthropic(req.Instructions, req.Input, isOpus55 || isSonnet55)
+	system, messages, err := convertResponsesInputToAnthropic(req.Instructions, req.Input, isOpus55 || isSonnet55 || req.PreserveSignedThinking)
 	if err != nil {
 		return nil, err
 	}

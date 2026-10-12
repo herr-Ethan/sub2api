@@ -72,6 +72,8 @@ func (s *OpenAIGatewayService) forwardResponsesViaNativeAnthropic(
 		return nil, err
 	}
 	responsesReq.Model = upstreamModel
+	// 国产供应商的 Anthropic 端点（如 DeepSeek 思考模式）要求原样回传带签名的思考块。
+	responsesReq.PreserveSignedThinking = true
 	anthropicReq, err := apicompat.ResponsesToAnthropicRequest(&responsesReq)
 	if err != nil {
 		writeResponsesError(c, http.StatusBadRequest, "invalid_request_error", err.Error())
@@ -332,7 +334,7 @@ func (s *OpenAIGatewayService) handleResponsesStreamingFromNativeAnthropic(
 
 	state := apicompat.NewAnthropicEventToResponsesState()
 	state.Model = originalModel
-	state.PreserveThinkingSignatures = isClaude55SignedThinkingModel(upstreamModel)
+	state.PreserveThinkingSignatures = true
 	clientToolRestorer := apicompat.NewResponsesClientToolStreamRestorer(clientToolMapping)
 
 	var usage ClaudeUsage

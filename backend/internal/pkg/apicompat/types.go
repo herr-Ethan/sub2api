@@ -249,6 +249,9 @@ type ResponsesRequest struct {
 	ServiceTier        string              `json:"service_tier,omitempty"`
 	PromptCacheKey     string              `json:"prompt_cache_key,omitempty"`
 	PreviousResponseID string              `json:"previous_response_id,omitempty"`
+	// PreserveSignedThinking replays signed thinking envelopes for upstreams that
+	// require them outside the Claude 5.5 defaults; set by the gateway, never parsed.
+	PreserveSignedThinking bool `json:"-"`
 }
 
 // ResponsesReasoning configures reasoning effort in the Responses API.

@@ -1882,6 +1882,50 @@ func TestOpus55SignedThinkingResponsesRoundTrip(t *testing.T) {
 	require.Error(t, err)
 }
 
+// 国产供应商直通（如 DeepSeek 思考模式）由网关显式开启：流式响应保留签名，下一轮请求原样回传。
+func TestPreserveSignedThinkingStreamRoundTrip(t *testing.T) {
+	index := 0
+	state := NewAnthropicEventToResponsesState()
+	state.PreserveThinkingSignatures = true
+	var items []ResponsesOutput
+	for _, evt := range []AnthropicStreamEvent{
+		{Type: "message_start", Message: &AnthropicResponse{ID: "msg_1", Model: "deepseek-v4-pro"}},
+		{Type: "content_block_start", Index: &index, ContentBlock: &AnthropicContentBlock{Type: "thinking"}},
+		{Type: "content_block_delta", Index: &index, Delta: &AnthropicDelta{Type: "thinking_delta", Thinking: "先查价格"}},
+		{Type: "content_block_delta", Index: &index, Delta: &AnthropicDelta{Type: "signature_delta", Signature: "deepseek-signed"}},
+		{Type: "content_block_stop", Index: &index},
+	} {
+		for _, out := range AnthropicEventToResponsesEvents(&evt, state) {
+			if out.Type == "response.output_item.done" && out.Item != nil {
+				items = append(items, *out.Item)
+			}
+		}
+	}
+	require.Len(t, items, 1)
+	require.NotEmpty(t, items[0].EncryptedContent)
+	items = append(items, ResponsesOutput{Type: "function_call", CallID: "call_1", Name: "lookup", Arguments: "{}"})
+	raw, err := json.Marshal(items)
+	require.NoError(t, err)
+	var input []ResponsesInputItem
+	require.NoError(t, json.Unmarshal(raw, &input))
+	input = append(input, ResponsesInputItem{Type: "function_call_output", CallID: "call_1", Output: "ok"})
+	raw, err = json.Marshal(input)
+	require.NoError(t, err)
+
+	converted, err := ResponsesToAnthropicRequest(&ResponsesRequest{Model: "deepseek-v4-pro", Input: raw, PreserveSignedThinking: true})
+	require.NoError(t, err)
+	var blocks []AnthropicContentBlock
+	require.NoError(t, json.Unmarshal(converted.Messages[0].Content, &blocks))
+	require.Equal(t, AnthropicContentBlock{Type: "thinking", Thinking: "先查价格", Signature: "deepseek-signed"}, blocks[0])
+	require.Equal(t, "tool_use", blocks[1].Type)
+
+	// 未开启时保持原行为：非 Claude 5.5 模型不回传思考块。
+	converted, err = ResponsesToAnthropicRequest(&ResponsesRequest{Model: "deepseek-v4-pro", Input: raw})
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(converted.Messages[0].Content, &blocks))
+	require.Equal(t, "tool_use", blocks[0].Type)
+}
+
 func TestSonnet55ResponsesThinkingAndSampling(t *testing.T) {
 	for _, effort := range []string{"", "low", "medium", "high", "xhigh", "max", "none"} {
 		req := &ResponsesRequest{Model: "claude-sonnet-5-5", Input: json.RawMessage(`"hello"`), Reasoning: &ResponsesReasoning{Effort: effort}}
