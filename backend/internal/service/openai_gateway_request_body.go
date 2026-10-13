@@ -135,6 +135,7 @@ func deleteOpenAIResponsesNoneReasoningEffortFromObject(account *Account, body m
 // DeepSeek 另需把 Codex/OpenAI 的 input_image.image_url 写成线上 serde
 // 要求的 url 字段；openai 平台但 base_url 指向 api.deepseek.com 的映射
 // 账号同样走这条出站改写（Codex 贴图会 422 missing field url）。
+// 智谱另需把思考档位收敛到其支持的 low / high / max。
 // 非 CN / 非 DeepSeek 上游原样返回。
 func normalizeDeepSeekResponsesRequestBody(account *Account, body []byte) []byte {
 	if account == nil {
@@ -155,6 +156,15 @@ func normalizeDeepSeekResponsesRequestBody(account *Account, body []byte) []byte
 		normalized = patched
 		if stripped, err := sjson.DeleteBytes(normalized, "previous_response_id"); err == nil {
 			normalized = stripped
+		}
+		// 智谱 Responses 只接受 low / high / max，其余档位按最接近的一档发送。
+		if account.Platform == PlatformZhipu {
+			effort := map[string]string{"none": "low", "minimal": "low", "medium": "high", "xhigh": "max", "ultra": "max"}[gjson.GetBytes(normalized, "reasoning.effort").String()]
+			if effort != "" {
+				if patched, err := sjson.SetBytes(normalized, "reasoning.effort", effort); err == nil {
+					normalized = patched
+				}
+			}
 		}
 	}
 
