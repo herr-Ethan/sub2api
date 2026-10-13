@@ -62,7 +62,7 @@ function legacyIsMultiProtocol(platform: string): boolean {
 }
 
 function legacySupportsResponses(platform: string): boolean {
-  return ['deepseek', 'kimi', 'minimax', 'opencode_go', 'command_code'].includes(platform)
+  return ['deepseek', 'kimi', 'zhipu', 'minimax', 'opencode_go', 'command_code'].includes(platform)
 }
 
 function legacyHeaderOverride(platform: string, type: string): boolean {
@@ -94,6 +94,7 @@ function legacyDefaultCNBaseUrl(platform: string, mode: string, protocol: CnApiP
     case 'kimi':
       return mode === 'coding' ? 'https://api.kimi.com/coding/v1' : 'https://api.moonshot.cn/v1'
     case 'zhipu':
+      if (protocol === 'responses') return 'https://open.bigmodel.cn/api/v1'
       return mode === 'coding' ? 'https://open.bigmodel.cn/api/coding/paas/v4' : 'https://open.bigmodel.cn/api/paas/v4'
     case 'deepseek':
       return 'https://api.deepseek.com'
@@ -183,7 +184,7 @@ describe('credentialsBuilder derives multi-protocol data from the platform catal
     expect(providerRoutesByModel('kimi')).toBe(false)
     expect(providerAccountModes('opencode_go')).toEqual(['go', 'zen'])
     expect(providerAccountModes('deepseek')).toEqual(['payg'])
-    expect(providerNativeProtocols('zhipu', 'coding')).toEqual(['chat_completions', 'anthropic'])
+    expect(providerNativeProtocols('zhipu', 'coding')).toEqual(['chat_completions', 'anthropic', 'responses'])
     expect(resolveProviderAccountMode('kimi', 'coding')).toBe('coding')
     expect(resolveProviderAccountMode('deepseek', 'coding')).toBe('payg')
     expect(resolveProviderAccountMode('opencode_go', undefined)).toBe('go')

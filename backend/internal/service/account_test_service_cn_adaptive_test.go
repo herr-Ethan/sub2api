@@ -82,28 +82,6 @@ data: {"type":"response.completed"}
 	}
 }
 
-func TestAccountTestService_AdaptiveChatOnlyProvidersTestChatAndAnthropicEndpoints(t *testing.T) {
-	account := adaptiveCNAccountTestAccount(301, PlatformZhipu)
-	svc, upstream := adaptiveCNAccountTestService(
-		account,
-		adaptiveCNChatTestResponse(),
-		adaptiveCNAnthropicTestResponse(),
-	)
-	c, recorder := newTestContext()
-
-	err := svc.TestAccountConnection(c, account.ID, "glm-4.7", "hello", AccountTestModeDefault)
-
-	require.NoError(t, err)
-	require.Len(t, upstream.requests, 2)
-	require.Equal(t, "http://chat.example/v1/chat/completions", upstream.requests[0].URL.String())
-	require.Equal(t, "http://anthropic.example/v1/messages", upstream.requests[1].URL.String())
-	require.Equal(t, "Bearer sk-adaptive-test", upstream.requests[0].Header.Get("Authorization"))
-	require.Equal(t, "sk-adaptive-test", upstream.requests[1].Header.Get("x-api-key"))
-	require.Equal(t, 1, strings.Count(recorder.Body.String(), `"type":"test_start"`))
-	require.Equal(t, 1, strings.Count(recorder.Body.String(), `"type":"test_complete"`))
-	require.Contains(t, recorder.Body.String(), "已通过原生 /v1/messages 验证")
-}
-
 func TestAccountTestService_AdaptiveDeepSeekAlsoTestsResponsesEndpoint(t *testing.T) {
 	account := adaptiveCNAccountTestAccount(302, PlatformDeepseek)
 	svc, upstream := adaptiveCNAccountTestService(

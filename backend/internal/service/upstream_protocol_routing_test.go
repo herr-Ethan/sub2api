@@ -61,14 +61,14 @@ func TestResolveUpstreamProtocol(t *testing.T) {
 		{"kimi adaptive anthropic inbound", adaptive(PlatformKimi), anthropic, "", anthropic},
 		{"kimi adaptive cc inbound", adaptive(PlatformKimi), cc, "", cc},
 		{"kimi adaptive responses inbound", adaptive(PlatformKimi), responses, "", responses},
-		{"zhipu adaptive responses inbound falls back to cc", adaptive(PlatformZhipu), responses, "", cc},
+		{"zhipu adaptive responses inbound", adaptive(PlatformZhipu), responses, "", responses},
 		{"zhipu adaptive anthropic inbound", adaptive(PlatformZhipu), anthropic, "", anthropic},
 
 		// 显式固定协议，与入站无关
 		{"kimi pinned anthropic", pinned(PlatformKimi, anthropic), cc, "", anthropic},
 		{"kimi pinned cc", pinned(PlatformKimi, cc), responses, "", cc},
 		{"kimi pinned responses", pinned(PlatformKimi, responses), anthropic, "", responses},
-		{"zhipu pinned responses is unsupported and stays cc", pinned(PlatformZhipu, responses), responses, "", cc},
+		{"zhipu pinned responses", pinned(PlatformZhipu, responses), anthropic, "", responses},
 
 		// 按模型分流（多模型聚合平台），与入站无关
 		{"opencode go gpt", openCode(AccountModeGo, nil), anthropic, "gpt-5.6-luna", responses},
